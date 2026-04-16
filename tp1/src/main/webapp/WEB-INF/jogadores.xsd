@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://ww.w3.org/2001/XMLSchema">
+	<xs:element name="listaJogadores">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="jogador">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="nickname" type="xs:string"/>
+							<xs:element name="password" type="xs:string"/>
+							<xs:element name="nacionalidade" type="xs:string"/>
+							<xs:element name="idade" type="xs:int"/>
+							<xs:element name="foto" type="xs:string"/>
+							<xs:element name="vitorias" type="xs:int" default="0"/>
+							<xs:element name="derrotas" type="xs:int" default="0"/>
+							<xs:element name="tempoTotal" type="xs:long" default="0"/>	
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
