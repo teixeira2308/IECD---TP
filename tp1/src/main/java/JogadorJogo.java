@@ -14,6 +14,7 @@ public class JogadorJogo {
 	private final static Scanner leitor = new Scanner(System.in);
 	private final static PrintStream escritor = System.out;
 	
+	private int score;
 	/**
 	 * Método principal: faz a ponte entre o jogador local e o servidor ⚡.
 	 */
