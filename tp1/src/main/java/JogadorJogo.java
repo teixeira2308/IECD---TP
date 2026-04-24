@@ -5,6 +5,8 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
+import org.w3c.dom.Document;
+
 /**
  * Cliente para o jogo Dots and Boxes utilizando serialização.
  */
@@ -15,8 +17,31 @@ public class JogadorJogo {
     private static PrintStream saida = System.out;
     private static Scanner leitor = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        try (Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT)) {
+    public static void main(String[] args) throws Exception {
+    	try {
+    		Document doc = XMLReader.loadXML("jogadores.xml");
+    		
+    		System.out.println("1. Login");
+    		System.out.println("2. Registo");
+    		int opcao = leitor.nextInt();
+    		leitor.nextLine();
+    		
+    		if (opcao == 1) {
+    			System.out.print("Nickname: "); String nick = leitor.nextLine();
+    			System.out.print("Password: "); String pass = leitor.nextLine();
+    			
+    			if (!XMLReader.validarLogin(doc, nick, pass)) {
+    				System.out.println("Login falhou!");
+    				return;
+    			}
+    		} else {
+    			System.out.print("Novo Nickname: "); String nick = leitor.nextLine();
+    			System.out.print("Nova Password"); String pass = leitor.nextLine();
+    			XMLReader.addJogador(doc, nick, pass);
+    			XMLReader.saveXML(doc, "jogadores.xml");
+    		}
+    		Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT);
+    	
             saida.println("🚀 Ligação estabelecida: " + socket);
 
             // 1. Receber o símbolo (X ou O) via stream básico

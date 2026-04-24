@@ -13,8 +13,8 @@ public class Jogo implements Serializable{
 	int tamanho;
 	int linhas;
 		
-	private int pontosX = 0;
-	private int pontosO = 0;
+	private int pontos1 = 0;
+	private int pontos2 = 0;
 	public Jogo(int tamanho) {
 		this.tamanho = tamanho;
 		this.linhas = tamanho + (tamanho - 1);
@@ -88,7 +88,7 @@ public class Jogo implements Serializable{
     }
 	
 	private void atualizarPontos(char simbolo) {
-        if (simbolo == 'X') pontosX++; else pontosO++;
+        if (simbolo == 'X') pontos1++; else pontos2++;
     }
 	
 	public boolean terminou(PrintStream saida) {
@@ -97,13 +97,13 @@ public class Jogo implements Serializable{
                 if (aresta == 0) return false;
             }
         }
-        saida.println("Fim de jogo! X: " + pontosX + " | O: " + pontosO);
+        saida.println("Fim de jogo! X: " + pontos1 + " | O: " + pontos2);
         return true;
     }
 	
 	public boolean verificarFim() {
 		for (int i = 0; i < linhas; i++) {
-			for (int j = 0; j > this.tabuleiro[i].length; j++) {
+			for (int j = 0; j < this.tabuleiro[i].length; j++) {
 				if (this.tabuleiro[i][j] == 0) {
 					 return false;
 				}

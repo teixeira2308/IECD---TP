@@ -11,3 +11,16 @@ Command-line arguments:  -os macosx -ws cocoa -arch aarch64 -product org.eclipse
 
 !ENTRY ch.qos.logback.classic 1 0 2026-04-16 16:42:22.565
 !MESSAGE Logback config file: /Users/tiagosteixeira/Library/CloudStorage/OneDrive-InstitutoSuperiordeEngenhariadeLisboa/LEIM/4º Semestre/IECD/iecd01/tp1/.metadata/.plugins/org.eclipse.m2e.logback/logback.2.7.101.20251017-1242.xml
+!SESSION 2026-04-24 19:50:43.404 -----------------------------------------------
+eclipse.buildId=4.39.0.20260305-0817
+java.version=21.0.7
+java.vendor=Oracle Corporation
+BootLoader constants: OS=macosx, ARCH=aarch64, WS=cocoa, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.jee.product -keyring /Users/tiagosteixeira/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch aarch64 -product org.eclipse.epp.package.jee.product -keyring /Users/tiagosteixeira/.eclipse_keyring -data /Users/tiagosteixeira/Library/CloudStorage/OneDrive-InstitutoSuperiordeEngenhariadeLisboa/LEIM/4º Semestre/IECD/iecd01/tp1
+
+!ENTRY ch.qos.logback.classic 1 0 2026-04-24 19:50:45.412
+!MESSAGE Activated before the state location was initialized. Retry after the state location is initialized.
+
+!ENTRY ch.qos.logback.classic 1 0 2026-04-24 19:50:47.406
+!MESSAGE Logback config file: /Users/tiagosteixeira/Library/CloudStorage/OneDrive-InstitutoSuperiordeEngenhariadeLisboa/LEIM/4º Semestre/IECD/iecd01/tp1/.metadata/.plugins/org.eclipse.m2e.logback/logback.2.7.101.20251017-1242.xml

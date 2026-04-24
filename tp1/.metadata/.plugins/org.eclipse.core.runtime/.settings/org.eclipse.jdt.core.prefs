@@ -1,0 +1,8 @@
+eclipse.preferences.version=1
+org.eclipse.jdt.core.classpathVariable.JRE_LIB=/Users/tiagosteixeira/Library/Java/JavaVirtualMachines/graalvm-jdk-21.0.7/Contents/Home/lib/jrt-fs.jar
+org.eclipse.jdt.core.classpathVariable.JRE_SRC=/Users/tiagosteixeira/Library/Java/JavaVirtualMachines/graalvm-jdk-21.0.7/Contents/Home/lib/src.zip
+org.eclipse.jdt.core.classpathVariable.JRE_SRCROOT=
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=21
+org.eclipse.jdt.core.compiler.compliance=21
+org.eclipse.jdt.core.compiler.release=enabled
+org.eclipse.jdt.core.compiler.source=21

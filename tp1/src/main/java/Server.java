@@ -38,9 +38,9 @@ public class Server {
 			//Cria threads para copiar caracteres em ambas as direções
 			//Uma thread para copiar da entrada para a saida
 			//Player1 começa, Player2 espera pela sua vez	
-			new Thread(() -> copiarCaracteres(socket1, socket2, 'X')).start();
+			new Thread(() -> copiarCaracteres(socket1, socket2, '1')).start();
 			//Outra thread para o Player2 fazer a jogada
-			new Thread(() -> copiarCaracteres(socket2, socket1, 'O')).start();
+			new Thread(() -> copiarCaracteres(socket2, socket1, '2')).start();
 		}
 	}
 	

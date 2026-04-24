@@ -1,7 +1,6 @@
-/tp1/
-/Jogo.class
-/jogadores.xml
-/Main.class
+/Jogador.class
 /JogadorJogo.class
-/XMLReader.class
+/Jogo.class
 /Server.class
+/XMLReader.class
+/jogadores.xml
