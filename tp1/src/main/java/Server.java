@@ -12,7 +12,7 @@ import java.net.Socket;
 public class Server {
 		
 	//Configurar o port
-	public final static int DEFAULT_PORT = 788;
+	public final static int DEFAULT_PORT = 5025;
 	
 	//Método principal do servidor. Throws IOException 
 	//para conseguir implementar os sockets
@@ -38,9 +38,9 @@ public class Server {
 			//Cria threads para copiar caracteres em ambas as direções
 			//Uma thread para copiar da entrada para a saida
 			//Player1 começa, Player2 espera pela sua vez	
-			new Thread(() -> copiarCaracteres(socket1, socket2, '1')).start();
+			new Thread(() -> copiarCaracteres(socket1, socket2, 'X')).start();
 			//Outra thread para o Player2 fazer a jogada
-			new Thread(() -> copiarCaracteres(socket2, socket1, '2')).start();
+			new Thread(() -> copiarCaracteres(socket2, socket1, 'O')).start();
 		}
 	}
 	

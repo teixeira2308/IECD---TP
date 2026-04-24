@@ -1,71 +1,81 @@
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-
+/**
+ * Cliente para o jogo Dots and Boxes utilizando serialização.
+ */
 public class JogadorJogo {
 
-	private final static String DEFAULT_HOST = "localhost";
-	private final static int DEFAULT_PORT = 5025;
+    private final static String DEFAULT_HOST = "localhost";
+    private final static int DEFAULT_PORT = 5025;
+    private static PrintStream saida = System.out;
+    private static Scanner leitor = new Scanner(System.in);
 
-	// Streams para interação com o utilizador local ⌨️
-	private final static Scanner leitor = new Scanner(System.in);
-	private final static PrintStream escritor = System.out;
-	
-	private int score;
-	/**
-	 * Método principal: faz a ponte entre o jogador local e o servidor ⚡.
-	 */
-	public static void main(String[] args) {
-		System.out.println("🚀 A ligar ao servidor de Jogo do Galo...");
-		
-		try (
-			// Ligação ao servidor 🔗
-			Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT);
-			Scanner scRede = new Scanner(socket.getInputStream());
-			PrintStream osRede = new PrintStream(socket.getOutputStream(), true)
-		) {
-			Jogo jogo = new Jogo(5);
-			System.out.println("✅ Ligação estabelecida: " + socket);
+    public static void main(String[] args) {
+        try (Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT)) {
+            saida.println("🚀 Ligação estabelecida: " + socket);
 
-			// Recebe o símbolo atribuído pelo servidor (X ou O) 🎫
-			int sinal = socket.getInputStream().read();
-			if (sinal == -1) throw new IOException("O servidor fechou a ligação precocemente.");
-			
-			char meuSimbolo = (char) sinal;
-			char simboloOponente = (meuSimbolo == 'X') ? 'O' : 'X';
-			System.out.println("🎭 Jogas com o símbolo: '" + meuSimbolo + "'");
+            // 1. Receber o símbolo (X ou O) via stream básico
+            char simbolo = (char) socket.getInputStream().read();
+            saida.println("🎭 Jogas com o símbolo: '" + simbolo + "'");
+            
+            // X começa sempre
+            boolean minhaVez = (simbolo == 'X');
 
-			// No Jogo do Galo, o 'X' começa sempre ⏱️
-			boolean minhaVez = (meuSimbolo == 'X');
-			while (true) {
-				if (minhaVez) {
-					// Turno Local: Eu jogo e envio para a rede 📤
-					short jogadaLocal = jogo.recebeJogada(meuSimbolo, escritor, leitor);
-					osRede.println(jogadaLocal);
-					
-					if (jogo.terminou(escritor)) break;
-					minhaVez = false; // Passo a vez ao oponente
-					
-				} else {
-					// Turno Remoto: Espero pela jogada do outro 📥
-					System.out.println("⏳ Aguarda a jogada do oponente...");
-					if (scRede.hasNextShort()) {
-						short jogadaRemota = scRede.nextShort();
-						jogo.joga(jogadaRemota, simboloOponente);
-						if (jogo.terminou(escritor)) break;
-						minhaVez = true; // Volta a ser o meu turno
-					} else {
-						System.out.println("🔌 Oponente desconectado.");
-						break;
-					}
-				}
-			}
-		} catch (IOException | NoSuchElementException e) {
-			System.out.println("💥 A ligação foi interrompida ou fechada!");
-		} 
-		System.out.println("🏁 O programa terminou. Até à próxima!");
-	}
+            // 2. Streams para serialização de objetos
+            try (ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+                // Inicializa o jogo (tamanho 5 conforme o teu construtor)
+                Jogo objetoJogo = new Jogo(5);
+
+                while (true) {
+                    if (minhaVez) {
+                        // TURNO LOCAL
+                        objetoJogo.printTabuleiro(); // Usa o teu método de desenho
+                        saida.println("\nSua vez! Digite a LINHA e a COLUNA da aresta:");
+                        
+                        int r = leitor.nextInt();
+                        int c = leitor.nextInt();
+
+                        // Executa a jogada e verifica se ganhou turno extra
+                        // Nota: Precisas implementar o retorno 'boolean' no método jogar() do Jogo.java
+                        boolean ganhouVezExtra = objetoJogo.joga(r, c, simbolo);
+
+                        // Envia o estado do jogo atualizado para o servidor
+                        out.writeObject(objetoJogo);
+                        out.flush();
+                        out.reset(); // Limpa cache para garantir envio da nova versão
+
+                        if (objetoJogo.verificarFim()) break;
+
+                        // Só passa a vez se NÃO fechou um quadrado
+                        if (!ganhouVezExtra) {
+                            minhaVez = false;
+                        } else {
+                            saida.println("🌟 Fechaste um quadrado! Joga de novo.");
+                        }
+
+                    } else {
+                        // TURNO REMOTO
+                        saida.println("⏳ Aguardando a jogada do oponente...");
+                        objetoJogo = (Jogo) in.readObject(); // Recebe o objeto do oponente
+                        
+                        if (objetoJogo.verificarFim()) break;
+                        
+                        // Oponente joga de novo se os pontos dele aumentaram
+                        // Aqui o servidor/lógica controla quem é o próximo a agir
+                        minhaVez = true; 
+                    }
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            saida.println("💥 Erro na ligação: " + e.getMessage());
+        }
+        saida.println("🏁 Jogo terminado!");
+    }
 }

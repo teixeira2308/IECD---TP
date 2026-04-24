@@ -8,9 +8,13 @@ public class Jogo implements Serializable{
 
 	private int [][] tabuleiro;
 	private int [][] quadrados;
+	
+	
 	int tamanho;
 	int linhas;
 		
+	private int pontosX = 0;
+	private int pontosO = 0;
 	public Jogo(int tamanho) {
 		this.tamanho = tamanho;
 		this.linhas = tamanho + (tamanho - 1);
@@ -31,9 +35,71 @@ public class Jogo implements Serializable{
 		}
 	}
 	
-	public void jogar(int linha, int coluna, char jogador, PrintStream saida, Scanner leitor) {
-		
-	}
+	public boolean joga(int r, int c, char simbolo) {
+        if (r < 0 || r >= linhas || c < 0 || c >= tabuleiro[r].length || tabuleiro[r][c] != 0) {
+            return false; // Jogada inválida ou já preenchida
+        }
+
+        // Marca a aresta (1 para X, 2 para O - ou apenas 1 para ocupado)
+        tabuleiro[r][c] = (simbolo == 'X') ? 1 : 2;
+
+        return verificarEPreencherQuadrados(r, c, simbolo);
+    }
+	
+	private boolean verificarEPreencherQuadrados(int r, int c, char simbolo) {
+        boolean fechouAlgum = false;
+        int valorJogador = (simbolo == 'X') ? 1 : 2;
+
+        if (r % 2 == 0) { // Linha Horizontal
+            //quadrado acima
+            if (r > 0 && verificarQuadrado(r - 1, c)) {
+                quadrados[(r/2)-1][c] = valorJogador;
+                atualizarPontos(simbolo);
+                fechouAlgum = true;
+            }
+            //quadrado abaixo
+            if (r < linhas - 1 && verificarQuadrado(r + 1, c)) {
+                quadrados[r/2][c] = valorJogador;
+                atualizarPontos(simbolo);
+                fechouAlgum = true;
+            }
+        } else { // Linha Vertical
+            //quadrado a esquerda
+            if (c > 0 && verificarQuadrado(r, c - 1)) {
+                quadrados[r/2][c-1] = valorJogador;
+                atualizarPontos(simbolo);
+                fechouAlgum = true;
+            }
+            //quadrado a direita
+            if (c < tamanho - 1 && verificarQuadrado(r, c)) {
+                quadrados[r/2][c] = valorJogador;
+                atualizarPontos(simbolo);
+                fechouAlgum = true;
+            }
+        }
+        return fechouAlgum;
+    }
+	
+	private boolean verificarQuadrado(int rVertical, int cEsquerda) {
+        return tabuleiro[rVertical-1][cEsquerda] != 0 &&
+               tabuleiro[rVertical+1][cEsquerda] != 0 &&
+               tabuleiro[rVertical][cEsquerda] != 0 &&
+               tabuleiro[rVertical][cEsquerda+1] != 0;
+    }
+	
+	private void atualizarPontos(char simbolo) {
+        if (simbolo == 'X') pontosX++; else pontosO++;
+    }
+	
+	public boolean terminou(PrintStream saida) {
+        for (int[] linha : tabuleiro) {
+            for (int aresta : linha) {
+                if (aresta == 0) return false;
+            }
+        }
+        saida.println("Fim de jogo! X: " + pontosX + " | O: " + pontosO);
+        return true;
+    }
 	
 	public boolean verificarFim() {
 		for (int i = 0; i < linhas; i++) {
