@@ -112,16 +112,26 @@ public class Jogo implements Serializable{
 		return true;
 	}
 	
-	public void printTabuleiro() {
-		for (int i = 0; i < this.tabuleiro.length; i++) {
-			System.out.println();
-			System.out.print(i + 1 + " ");
-			if (i % 2 == 0) {
-				System.out.print(" ");
-			}
-			for (int j = 0; j < this.tabuleiro[i].length; j++) {
-				System.out.print("+" + " ");
-			}
-		}
-	}
+	public void printTabuleiro(PrintStream saida) {
+        for (int i = 0; i < linhas; i++) {
+            saida.print(i + " ");
+            if (i % 2 == 0) { // Linhas horizontais: .---.---.
+                for (int j = 0; j < tamanho; j++) {
+                    saida.print(".");
+                    if (j < tamanho - 1) {
+                        saida.print(tabuleiro[i][j] != 0 ? "---" : "   ");
+                    }
+                }
+            } else { // Linhas verticais: |   |   |
+                for (int j = 0; j < tamanho; j++) {
+                    saida.print(tabuleiro[i][j] != 0 ? "|" : " ");
+                    if (j < tamanho - 1) {
+                        char dono = (quadrados[i/2][j] == 1) ? 'X' : (quadrados[i/2][j] == 2 ? 'O' : ' ');
+                        saida.print(" " + dono + " ");
+                    }
+                }
+            }
+            saida.println();
+        }
+    }
 }

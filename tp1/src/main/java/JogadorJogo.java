@@ -36,7 +36,7 @@ public class JogadorJogo {
                 while (true) {
                     if (minhaVez) {
                         // TURNO LOCAL
-                        objetoJogo.printTabuleiro(); // Usa o teu método de desenho
+                        objetoJogo.printTabuleiro(saida); // Usa o teu método de desenho
                         saida.println("\nSua vez! Digite a LINHA e a COLUNA da aresta:");
                         
                         int r = leitor.nextInt();
