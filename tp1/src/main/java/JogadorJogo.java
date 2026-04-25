@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.util.Scanner;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * Cliente para o jogo Dots and Boxes utilizando serialização.
@@ -18,6 +19,7 @@ public class JogadorJogo {
     private static Scanner leitor = new Scanner(System.in);
 
     public static void main(String[] args) throws Exception {
+    	String nickLogado = "";
     	try {
     		Document doc = XMLReader.loadXML("jogadores.xml");
     		
@@ -27,17 +29,21 @@ public class JogadorJogo {
     		leitor.nextLine();
     		
     		if (opcao == 1) {
-    			System.out.print("Nickname: "); String nick = leitor.nextLine();
+    			System.out.print("Nickname: "); nickLogado = leitor.nextLine();
     			System.out.print("Password: "); String pass = leitor.nextLine();
     			
-    			if (!XMLReader.validarLogin(doc, nick, pass)) {
+    			if (!XMLReader.validarLogin(doc, nickLogado, pass)) {
     				System.out.println("Login falhou!");
     				return;
     			}
     		} else {
-    			System.out.print("Novo Nickname: "); String nick = leitor.nextLine();
+    			System.out.print("Novo Nickname: "); nickLogado = leitor.nextLine();
     			System.out.print("Nova Password"); String pass = leitor.nextLine();
-    			XMLReader.addJogador(doc, nick, pass);
+    			System.out.print("Nacionalidade: "); String nac = leitor.nextLine(); 
+    			System.out.print("Idade: "); int idade = leitor.nextInt();
+    			leitor.nextLine();
+    			
+    			XMLReader.addJogador(doc, nickLogado, pass, nac, idade);
     			XMLReader.saveXML(doc, "jogadores.xml");
     		}
     		Socket socket = new Socket(DEFAULT_HOST, DEFAULT_PORT);
@@ -57,6 +63,7 @@ public class JogadorJogo {
 
                 // Inicializa o jogo (tamanho 5 conforme o teu construtor)
                 Jogo objetoJogo = new Jogo(5);
+                long tempoInicio = System.currentTimeMillis();
 
                 while (true) {
                     if (minhaVez) {
@@ -92,10 +99,28 @@ public class JogadorJogo {
                         
                         if (objetoJogo.verificarFim()) break;
                         
-                        // Oponente joga de novo se os pontos dele aumentaram
-                        // Aqui o servidor/lógica controla quem é o próximo a agir
+                        saida.println("Jogo Terminado!");
+                        
                         minhaVez = true; 
                     }
+                }
+                
+                saida.println("Jogo Terminado!");
+                long tempoGasto = (System.currentTimeMillis() - tempoInicio) / 1000;
+                Document docFinal = XMLReader.loadXML("jogadores.xml");
+                Element eu = XMLReader.getJogador(docFinal, nickLogado);
+                
+                if (eu != null) {
+                           
+	                boolean venci = objetoJogo.euGanhei(simbolo);
+	                
+	                XMLReader.atualizarStats(eu, venci);
+	                XMLReader.addTempo(eu, tempoGasto);
+	                XMLReader.saveXML(docFinal, "jogadores.xml");
+	                saida.println("Estatisticas atualizadas localmente");
+	                
+	                // Oponente joga de novo se os pontos dele aumentaram
+	                // Aqui o servidor/lógica controla quem é o próximo a agir
                 }
             }
         } catch (IOException | ClassNotFoundException e) {

@@ -48,7 +48,7 @@ public class XMLReader {
 		return pass.equals(password);
 	}
 	
-	public static void addJogador(Document doc, String nickname, String password) {
+	public static void addJogador(Document doc, String nickname, String password, String nacionalidade, int idade) {
 		Element root = doc.getDocumentElement();
 		
 		Element jogador = doc.createElement("jogador");
@@ -59,11 +59,11 @@ public class XMLReader {
 		Element pass = doc.createElement("password");
 		pass.setTextContent(password);
 		
-		Element nacionalidade = doc.createElement("nacionalidade");
-		nacionalidade.setTextContent("Unknown");
+		Element nac = doc.createElement("nacionalidade");
+		nac.setTextContent("Unknown");
 		
-		Element idade = doc.createElement("idade");
-		idade.setTextContent("0");
+		Element idad = doc.createElement("idade");
+		idad.setTextContent(String.valueOf(idade));
 		
 		Element foto = doc.createElement("foto");
 		foto.setTextContent("default.jpg");
@@ -79,8 +79,8 @@ public class XMLReader {
 		
 		jogador.appendChild(nick);
 		jogador.appendChild(pass);
-		jogador.appendChild(nacionalidade);
-		jogador.appendChild(idade);
+		jogador.appendChild(nac);
+		jogador.appendChild(idad);
 		jogador.appendChild(foto);
 		jogador.appendChild(vitorias);
 		jogador.appendChild(derrotas);

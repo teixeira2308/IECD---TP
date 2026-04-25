@@ -46,9 +46,17 @@ public class Jogo implements Serializable{
         return verificarEPreencherQuadrados(r, c, simbolo);
     }
 	
+	public boolean euGanhei(char simbolo) {
+		if (simbolo == '1') {
+			return pontos1 > pontos2;
+		} else {
+			return pontos2 > pontos1;
+		}
+	}
+	
 	private boolean verificarEPreencherQuadrados(int r, int c, char simbolo) {
         boolean fechouAlgum = false;
-        int valorJogador = (simbolo == 'X') ? 1 : 2;
+        int valorJogador = (simbolo == '1') ? 1 : 2;
 
         if (r % 2 == 0) { // Linha Horizontal
             //quadrado acima
@@ -88,7 +96,7 @@ public class Jogo implements Serializable{
     }
 	
 	private void atualizarPontos(char simbolo) {
-        if (simbolo == 'X') pontos1++; else pontos2++;
+        if (simbolo == '1') pontos1++; else pontos2++;
     }
 	
 	public boolean terminou(PrintStream saida) {
@@ -97,7 +105,7 @@ public class Jogo implements Serializable{
                 if (aresta == 0) return false;
             }
         }
-        saida.println("Fim de jogo! X: " + pontos1 + " | O: " + pontos2);
+        saida.println("Fim de jogo! J1: " + pontos1 + " | J2: " + pontos2);
         return true;
     }
 	
@@ -126,7 +134,7 @@ public class Jogo implements Serializable{
                 for (int j = 0; j < tamanho; j++) {
                     saida.print(tabuleiro[i][j] != 0 ? "|" : " ");
                     if (j < tamanho - 1) {
-                        char dono = (quadrados[i/2][j] == 1) ? 'X' : (quadrados[i/2][j] == 2 ? 'O' : ' ');
+                        char dono = (quadrados[i/2][j] == 1) ? '1' : (quadrados[i/2][j] == 2 ? '2' : ' ');
                         saida.print(" " + dono + " ");
                     }
                 }
