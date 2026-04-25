@@ -41,7 +41,7 @@ public class Jogo implements Serializable{
         }
 
         // Marca a aresta (1 para X, 2 para O - ou apenas 1 para ocupado)
-        tabuleiro[r][c] = (simbolo == 'X') ? 1 : 2;
+        tabuleiro[r][c] = (simbolo == '1') ? 1 : 2;
 
         return verificarEPreencherQuadrados(r, c, simbolo);
     }

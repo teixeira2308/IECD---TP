@@ -55,7 +55,7 @@ public class JogadorJogo {
             saida.println("🎭 Jogas com o símbolo: '" + simbolo + "'");
             
             // X começa sempre
-            boolean minhaVez = (simbolo == 'X');
+            boolean minhaVez = (simbolo == '1');
 
             // 2. Streams para serialização de objetos
             try (ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
