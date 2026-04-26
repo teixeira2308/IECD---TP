@@ -1,4 +1,5 @@
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -7,6 +8,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.validation.SchemaFactory;
+
 import java.io.File;
 
 import org.w3c.dom.Document;
@@ -17,6 +20,13 @@ public class XMLReader {
 
 	public static Document loadXML(String path) throws Exception {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		
+		factory.setValidating(false);
+		factory.setNamespaceAware(true);
+		
+		SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+		factory.setSchema(schemaFactory.newSchema(new File("src/main/webapp/WEB-INF/jogadores.xsd")));
+		
 		DocumentBuilder builder = factory.newDocumentBuilder();
 		Document doc = builder.parse(new File(path));
 		doc.getDocumentElement().normalize();
@@ -91,8 +101,15 @@ public class XMLReader {
 	}
 	
 	public synchronized static void saveXML(Document doc, String path) throws Exception {
-		Transformer transformer = TransformerFactory.newInstance().newTransformer();
-		transformer.transform(new DOMSource(doc), new StreamResult(new File(path)));
+		TransformerFactory tf = TransformerFactory.newInstance();
+		Transformer transformer = tf.newTransformer();
+		
+		transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
+		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+		
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(new File(path));
+		transformer.transform(source, result);
 	}
 	
 	public static void atualizarStats(Element jogador, boolean venceu) {

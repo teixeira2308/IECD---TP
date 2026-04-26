@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<listaJogadores>
+    	
+    <jogador>
+        		
+        <nickname>abc</nickname>
+        		
+        <password>12345</password>
+        		
+        <nacionalidade>Portugal</nacionalidade>
+        		
+        <idade>20</idade>
+        		
+        <foto>default.jpg</foto>
+        		
+        <vitorias>0</vitorias>
+        		
+        <derrotas>0</derrotas>
+        		
+        <tempoTotal>0</tempoTotal>
+        	
+    </jogador>
+    
+    <jogador>
+        <nickname>aaa</nickname>
+        <password>111</password>
+        <nacionalidade>Unknown</nacionalidade>
+        <idade>20</idade>
+        <foto>default.jpg</foto>
+        <vitorias>0</vitorias>
+        <derrotas>0</derrotas>
+        <tempoTotal>0</tempoTotal>
+    </jogador>
+</listaJogadores>

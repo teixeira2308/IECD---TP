@@ -17,6 +17,7 @@ public class JogadorJogo {
     private final static int DEFAULT_PORT = 5025;
     private static PrintStream saida = System.out;
     private static Scanner leitor = new Scanner(System.in);
+    private static boolean primeiraJogada = true;
 
     public static void main(String[] args) throws Exception {
     	String nickLogado = "";
@@ -38,7 +39,7 @@ public class JogadorJogo {
     			}
     		} else {
     			System.out.print("Novo Nickname: "); nickLogado = leitor.nextLine();
-    			System.out.print("Nova Password"); String pass = leitor.nextLine();
+    			System.out.print("Nova Password: "); String pass = leitor.nextLine();
     			System.out.print("Nacionalidade: "); String nac = leitor.nextLine(); 
     			System.out.print("Idade: "); int idade = leitor.nextInt();
     			leitor.nextLine();
@@ -66,9 +67,12 @@ public class JogadorJogo {
                 long tempoInicio = System.currentTimeMillis();
 
                 while (true) {
-                    if (minhaVez) {
+                    if (objetoJogo.getVezAtual() == simbolo) {
                         // TURNO LOCAL
-                        objetoJogo.printTabuleiro(saida); // Usa o teu método de desenho
+                    	if (primeiraJogada && simbolo == '1') {
+                            objetoJogo.printTabuleiro(saida);
+                            primeiraJogada = false;
+                    	}
                         saida.println("\nSua vez! Digite a LINHA e a COLUNA da aresta:");
                         
                         int r = leitor.nextInt();
@@ -82,6 +86,8 @@ public class JogadorJogo {
                         out.writeObject(objetoJogo);
                         out.flush();
                         out.reset(); // Limpa cache para garantir envio da nova versão
+                        
+                        objetoJogo.printTabuleiro(saida);
 
                         if (objetoJogo.verificarFim()) break;
 
@@ -89,7 +95,7 @@ public class JogadorJogo {
                         if (!ganhouVezExtra) {
                             minhaVez = false;
                         } else {
-                            saida.println("🌟 Fechaste um quadrado! Joga de novo.");
+                            saida.println("Fechaste um quadrado! Joga de novo.");
                         }
 
                     } else {
@@ -99,7 +105,7 @@ public class JogadorJogo {
                         
                         if (objetoJogo.verificarFim()) break;
                         
-                        saida.println("Jogo Terminado!");
+                        objetoJogo.printTabuleiro(saida);
                         
                         minhaVez = true; 
                     }

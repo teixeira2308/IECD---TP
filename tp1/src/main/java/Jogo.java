@@ -9,6 +9,7 @@ public class Jogo implements Serializable{
 	private int [][] tabuleiro;
 	private int [][] quadrados;
 	
+	private char vezAtual = '1';
 	
 	int tamanho;
 	int linhas;
@@ -42,8 +43,14 @@ public class Jogo implements Serializable{
 
         // Marca a aresta (1 para X, 2 para O - ou apenas 1 para ocupado)
         tabuleiro[r][c] = (simbolo == '1') ? 1 : 2;
+        boolean vezExtra = verificarEPreencherQuadrados(r, c, simbolo);
+        
+        if (!vezExtra) {
+        	vezAtual = (simbolo == '1') ? '2' : '1'; 
+        	
+        }
 
-        return verificarEPreencherQuadrados(r, c, simbolo);
+        return vezExtra;
     }
 	
 	public boolean euGanhei(char simbolo) {
@@ -121,6 +128,7 @@ public class Jogo implements Serializable{
 	}
 	
 	public void printTabuleiro(PrintStream saida) {
+		saida.println();
         for (int i = 0; i < linhas; i++) {
             saida.print(i + " ");
             if (i % 2 == 0) { // Linhas horizontais: .---.---.
@@ -142,4 +150,8 @@ public class Jogo implements Serializable{
             saida.println();
         }
     }
+	
+	public char getVezAtual() {
+		return vezAtual;
+	}
 }
