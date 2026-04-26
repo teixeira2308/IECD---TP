@@ -3,7 +3,7 @@
 	<xs:element name="listaJogadores">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element name="jogador">
+				<xs:element name="jogador" maxOccurs="unbounded">
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element name="nickname" type="xs:string"/>

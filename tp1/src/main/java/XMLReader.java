@@ -70,7 +70,7 @@ public class XMLReader {
 		pass.setTextContent(password);
 		
 		Element nac = doc.createElement("nacionalidade");
-		nac.setTextContent("Unknown");
+		nac.setTextContent(nacionalidade);
 		
 		Element idad = doc.createElement("idade");
 		idad.setTextContent(String.valueOf(idade));
@@ -101,15 +101,19 @@ public class XMLReader {
 	}
 	
 	public synchronized static void saveXML(Document doc, String path) throws Exception {
-		TransformerFactory tf = TransformerFactory.newInstance();
-		Transformer transformer = tf.newTransformer();
-		
-		transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
-		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-		
-		DOMSource source = new DOMSource(doc);
-		StreamResult result = new StreamResult(new File(path));
-		transformer.transform(source, result);
+	    doc.getDocumentElement().normalize();
+	    
+	    TransformerFactory tf = TransformerFactory.newInstance();
+	    Transformer transformer = tf.newTransformer();
+	    
+	    transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
+	    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+	    
+	    transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "no");
+
+	    DOMSource source = new DOMSource(doc);
+	    StreamResult result = new StreamResult(new File(path));
+	    transformer.transform(source, result);
 	}
 	
 	public static void atualizarStats(Element jogador, boolean venceu) {
