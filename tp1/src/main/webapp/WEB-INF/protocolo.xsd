@@ -1,0 +1,61 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="mensagem">
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="pedidoLogin" type="typePedidoLogin"/>
+				<xs:element name="pedidoRegisto" type="typePedidoRegisto"/>
+				<xs:element name="respostaAutenticacao" type="typeRespostaAutenticacao"/>
+				
+				<xs:element name="inicioJogo" type="typeInicioJogo"/>
+				<xs:element name="jogada" type="typeJogada"/>
+				<xs:element name="fimJogo" type="typeFimJogo"/>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:complexType name="typePedidoLogin">
+		<xs:sequence>
+			<xs:element name="nickname" type="xs:string"/>
+			<xs:element name="password" type="xs:string"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="typePedidoRegisto">
+		<xs:sequence>
+			<xs:element name="nickname" type="xs:string"/>
+			<xs:element name="password" type ="xs:string"/>
+			<xs:element name="nacionalidade" type="xs:string"/>
+			<xs:element name="idade" type="xs:int"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="typeRespostaAutenticacao">
+		<xs:sequence>
+			<xs:element name="status" type="xs:string"/>
+			<xs:element name="detalhe" type="xs:string" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="typeInicioJogo">
+		<xs:sequence>
+			<xs:element name="simboloAtribuido" type="xs:string"/>
+			<xs:element name="tamanhoTabuleiro" type="xs:int" default="5"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="typeJogada">
+		<xs:sequence>
+			<xs:element name="linha" type="xs:int"/>
+			<xs:element name="coluna" type="xs:int"/>
+			<xs:element name="jogador" type="xs:string"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="typeFimJogo">
+		<xs:sequence>
+			<xs:element name="vencedor" type="xs:string"/>
+			<xs:element name="pontosJogador1" type="xs:int"/>
+			<xs:element name="pontosJogador2" type="xs:int"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

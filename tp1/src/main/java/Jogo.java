@@ -50,7 +50,7 @@ public class Jogo implements Serializable{
         	
         }
 
-        return vezExtra;
+        return true;
     }
 	
 	public boolean euGanhei(char simbolo) {

@@ -36,6 +36,9 @@
         
         
         <tempoTotal>0</tempoTotal>
+        
+        
+        <corFundo>#ffffff</corFundo>
                         	
     
     
@@ -68,6 +71,8 @@
                         
         
         <tempoTotal>0</tempoTotal>
+        
+        <corFundo>#ffffff</corFundo>
                     
     
     </jogador>
@@ -90,6 +95,8 @@
         <derrotas>0</derrotas>
                 
         <tempoTotal>0</tempoTotal>
+        
+        <corFundo>#ffffff</corFundo>
             
     </jogador>
     
@@ -102,5 +109,6 @@
         <vitorias>0</vitorias>
         <derrotas>0</derrotas>
         <tempoTotal>0</tempoTotal>
+        <corFundo>#ffffff</corFundo>
     </jogador>
 </listaJogadores>
