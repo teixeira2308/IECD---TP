@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
 
 @WebListener
 public class ContextListener implements ServletContextListener{
@@ -18,7 +20,7 @@ public class ContextListener implements ServletContextListener{
 		context.setAttribute("xmlPath", xmlPath);
 		socketServerThread = new Thread(() -> {
 			try {
-				serverSocket = new ServetSocket(5025);
+				serverSocket = new ServerSocket(5025);
 				while (!Thread.currentThread().isInterrupted()) {
 					Socket clientSocket = serverSocket.accept();
 				}
