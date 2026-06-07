@@ -14,7 +14,7 @@ public class LoginServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String nick = request.getParameter("nickname");
 		String pass = request.getParameter("password");
-		String xmlPath = (String) getServletContext.getAttribute("xmlPath");
+		String xmlPath = (String) getServletContext().getAttribute("xmlPath");
 		
 		try {
 			org.w3c.dom.Document doc = XMLReader.loadXML(xmlPath);
