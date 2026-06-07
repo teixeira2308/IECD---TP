@@ -16,7 +16,7 @@ public class ContextListener implements ServletContextListener{
 	public void contextInitialized (ServletContextEvent sce) {
 		ServletContext context = sce.getServletContext();
 		String xmlPath = context.getRealPath("/WEB-INF/jogadores.xml");
-		String xsdPath = context.getRealPath("/WEB-INF/protocolo.xsd"); // Ajustar caminho se necessário
+		String xsdPath = context.getRealPath("/WEB-INF/protocolo.xsd"); 
 		
 		context.setAttribute("xmlPath", xmlPath);
 		
