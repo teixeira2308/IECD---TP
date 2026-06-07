@@ -15,54 +15,55 @@ import org.w3c.dom.NodeList;
 
 public class XMLReader {
 
+	private static final Object fileLock = new Object();
     public static Document loadXML(String path) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false);
-        factory.setNamespaceAware(true);
-        
-        // Desativa a validação automática via atributos internos do XML que causa o erro schema_reference
-        factory.setAttribute("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        factory.setAttribute("http://xml.org/sax/features/validation", false);
-        
-        // Resolução dinâmica e robusta do ficheiro jogadores.xsd
-        File xsdFile = new File("src/main/webapp/WEB-INF/jogadores.xsd");
-        if (!xsdFile.exists()) {
-            xsdFile = new File("main/webapp/WEB-INF/jogadores.xsd");
+    	synchronized (fileLock) {
+	        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	        factory.setValidating(false);
+	        factory.setNamespaceAware(true);
+	        
+	        factory.setAttribute("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+	        factory.setAttribute("http://xml.org/sax/features/validation", false);
+	        
+	        File xsdFile = new File("src/main/webapp/WEB-INF/jogadores.xsd");
+	        if (!xsdFile.exists()) {
+	            xsdFile = new File("main/webapp/WEB-INF/jogadores.xsd");
+	        }
+	        if (!xsdFile.exists()) {
+	            xsdFile = new File("WEB-INF/jogadores.xsd");
+	        }
+	        if (!xsdFile.exists()) {
+	            xsdFile = new File("jogadores.xsd");
+	        }
+	
+	        if (xsdFile.exists() && xsdFile.length() > 0) {
+	            try {
+	                SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+	                factory.setSchema(schemaFactory.newSchema(xsdFile));
+	            } catch (Exception e) {
+	                System.out.println("Aviso: Falha técnica ao processar a estrutura do jogadores.xsd. O XML será lido em modo de contingência.");
+	            }
+	        } else {
+	            System.out.println("Aviso: jogadores.xsd não encontrado no caminho local. Carregando em modo de compatibilidade.");
+	        }
+	        
+	        // Resolução dinâmica do ficheiro jogadores.xml
+	        File xmlFile = new File(path);
+	        if (!xmlFile.exists()) {
+	            xmlFile = new File("src/main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
+	        }
+	        if (!xmlFile.exists()) {
+	            xmlFile = new File("main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
+	        }
+	        if (!xmlFile.exists()) {
+	            xmlFile = new File(path);
+	        }
+	
+	        DocumentBuilder builder = factory.newDocumentBuilder();
+	        Document doc = builder.parse(xmlFile);
+	        doc.getDocumentElement().normalize();
+	        return doc;
         }
-        if (!xsdFile.exists()) {
-            xsdFile = new File("WEB-INF/jogadores.xsd");
-        }
-        if (!xsdFile.exists()) {
-            xsdFile = new File("jogadores.xsd");
-        }
-
-        if (xsdFile.exists() && xsdFile.length() > 0) {
-            try {
-                SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-                factory.setSchema(schemaFactory.newSchema(xsdFile));
-            } catch (Exception e) {
-                System.out.println("Aviso: Falha técnica ao processar a estrutura do jogadores.xsd. O XML será lido em modo de contingência.");
-            }
-        } else {
-            System.out.println("Aviso: jogadores.xsd não encontrado no caminho local. Carregando em modo de compatibilidade.");
-        }
-        
-        // Resolução dinâmica do ficheiro jogadores.xml
-        File xmlFile = new File(path);
-        if (!xmlFile.exists()) {
-            xmlFile = new File("src/main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
-        }
-        if (!xmlFile.exists()) {
-            xmlFile = new File("main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
-        }
-        if (!xmlFile.exists()) {
-            xmlFile = new File(path);
-        }
-
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(xmlFile);
-        doc.getDocumentElement().normalize();
-        return doc;
     }
     
     public static Element getJogador(Document doc, String nickname) {
@@ -128,12 +129,32 @@ public class XMLReader {
         root.appendChild(jogador);
     }
     
-    public static void atualizarPerfil(Element jogador, String novaFoto, String novaCor) {
+    public static void atualizarPerfil(Document doc, Element jogador, String novaFoto, String novaCor) {
         if (novaFoto != null && !novaFoto.trim().isEmpty()) {
-            jogador.getElementsByTagName("foto").item(0).setTextContent(novaFoto);
+            NodeList fotos = jogador.getElementsByTagName("foto");
+            if (fotos.getLength() > 0) {
+                fotos.item(0).setTextContent(novaFoto);
+            } else {
+                Element fotoElem = doc.createElement("foto");
+                fotoElem.setTextContent(novaFoto);
+                NodeList vitorias = jogador.getElementsByTagName("vitorias");
+                if (vitorias.getLength() > 0) {
+                    jogador.insertBefore(fotoElem, vitorias.item(0));
+                } else {
+                    jogador.appendChild(fotoElem);
+                }
+            }
         }
+
         if (novaCor != null && !novaCor.trim().isEmpty()) {
-            jogador.getElementsByTagName("corFundo").item(0).setTextContent(novaCor);
+            NodeList cores = jogador.getElementsByTagName("corFundo");
+            if (cores.getLength() > 0) {
+                cores.item(0).setTextContent(novaCor);
+            } else {
+                Element corElem = doc.createElement("corFundo");
+                corElem.setTextContent(novaCor);
+                jogador.appendChild(corElem); 
+            }
         }
     }
     
@@ -157,22 +178,23 @@ public class XMLReader {
     public synchronized static void saveXML(Document doc, String path) throws Exception {
         doc.getDocumentElement().normalize();
         
-        // Garante que se a pasta destino não existir no Workspace, ela é criada antes de salvar
-        File fileDestino = new File(path);
-        if (fileDestino.getParentFile() != null && !fileDestino.getParentFile().exists()) {
-            fileDestino.getParentFile().mkdirs();
+        synchronized (fileLock) {
+        	File fileDestino = new File(path);
+	        if (fileDestino.getParentFile() != null && !fileDestino.getParentFile().exists()) {
+	            fileDestino.getParentFile().mkdirs();
+	        }
+	       
+	        TransformerFactory tf = TransformerFactory.newInstance();
+	        Transformer transformer = tf.newTransformer();
+	        
+	        transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
+	        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+	        transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "no");
+	
+	        DOMSource source = new DOMSource(doc);
+	        StreamResult result = new StreamResult(fileDestino);
+	        transformer.transform(source, result);
         }
-        
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        
-        transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-        transformer.setOutputProperty(javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION, "no");
-
-        DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(fileDestino);
-        transformer.transform(source, result);
     }
     
     public static void atualizarStats(Element jogador, boolean venceu) {

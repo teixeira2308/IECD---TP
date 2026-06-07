@@ -1,20 +1,35 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="org.w3c.dom.*" %>
 <%
-    String utilizador = (String) session.getAttribute("user");
-    if (utilizador == null) {
-        response.sendRedirect("login.jsp");
-        return;
-    }
-
-    String xmlPath = (String) application.getAttribute("xmlPath");
-    Document doc = XMLReader.loadXML(xmlPath);
-    Element jogador = XMLReader.getJogador(doc, utilizador);
-
-    String fotoAtual = jogador.getElementsByTagName("foto").item(0).getTextContent();
-    String corAtual = "#ffffff";
-    if (jogador.getElementsByTagName("corFundo").getLength() > 0) {
-        corAtual = jogador.getElementsByTagName("corFundo").item(0).getTextContent();
+	String utilizador = (String) session.getAttribute("user");
+	if (utilizador == null) {
+	    response.sendRedirect("login.jsp");
+	    return;
+	}
+	
+	String xmlPath = (String) application.getAttribute("xmlPath");
+	Document doc = XMLReader.loadXML(xmlPath);
+	
+	Element jogador = XMLReader.getJogador(doc, utilizador);
+	
+	String fotoAtual = "default.jpg";
+	if (jogador.getElementsByTagName("foto").getLength() > 0) {
+	    fotoAtual = jogador.getElementsByTagName("foto").item(0).getTextContent();
+	}
+	
+	String corAtual = "#ffffff";
+	if (jogador.getElementsByTagName("corFundo").getLength() > 0) {
+	    corAtual = jogador.getElementsByTagName("corFundo").item(0).getTextContent();
+	}
+	
+	String nacionalidade = "Desconhecida";
+	if (jogador.getElementsByTagName("nacionalidade").getLength() > 0) {
+	    nacionalidade = jogador.getElementsByTagName("nacionalidade").item(0).getTextContent();
+	}
+	
+	String idade = "0";
+	if (jogador.getElementsByTagName("idade").getLength() > 0) {
+	    idade = jogador.getElementsByTagName("idade").item(0).getTextContent();
     }
 %>
 <!DOCTYPE html>

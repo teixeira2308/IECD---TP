@@ -154,4 +154,11 @@ public class Jogo implements Serializable{
 	public char getVezAtual() {
 		return vezAtual;
 	}
+	
+	public int getPontos1() {
+		return this.pontos1;
+	}
+	public int getPontos2() {
+		return this.pontos2;
+	}
 }

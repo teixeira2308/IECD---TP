@@ -55,14 +55,18 @@ public class RegistoServlet extends HttpServlet {
 			
 			org.w3c.dom.Element novoJogador = XMLReader.getJogador(doc, nick);
 			if (novoJogador != null && !nomeFotoFinal.equals("default.jpg")) {
-				novoJogador.getElementsByTagName("foto").item(0).setTextContent(nomeFotoFinal);
+				org.w3c.dom.NodeList fotos = novoJogador.getElementsByTagName("foto");
+				if (fotos.getLength() > 0) {
+					fotos.item(0).setTextContent(nomeFotoFinal);
+				}
 			}
 			
 			XMLReader.saveXML(doc, xmlPath);
 			
-			response.sendRedirect("login.jsp?sucesso=true");
+			response.sendRedirect("login.jsp");
 		} catch (Exception e) {
-			throw new ServletException("Erro ao processar o registo do utilizador");
+			request.setAttribute("erro", "Erro ao processar o registo: " + e.getMessage() );
+			request.getRequestDispatcher("registo.jsp").forward(request, response);
 		}
 		
 	}

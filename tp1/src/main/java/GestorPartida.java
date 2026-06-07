@@ -2,34 +2,37 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
-/**
- * GestorPartida controla a Thread dedicada a gerir o fluxo de rede
- * e o protocolo XML entre um par de jogadores (abc e aaa).
- */
-public class GestorPartida implements Runnable {
 
-    // Variáveis de ligação do Jogador 1
+public class GestorPartida implements Runnable {
+	
+	private static final List<GestorPartida> jogosAtivos = Collections.synchronizedList(new ArrayList<>());
+	
+	private final String idPartida;
+
     private Socket socket1;
     private BufferedReader in1;
     private PrintWriter out1;
     private String nick1;
 
-    // Variáveis de ligação do Jogador 2
     private Socket socket2;
     private BufferedReader in2;
     private PrintWriter out2;
     private String nick2;
+    private long tempoInicio;
 
-    // Instância central do jogo para controlo de turnos no Servidor
     private Jogo jogoPartida;
 
-    // Construtor obrigatório para bater certo com a chamada do Server.java
     public GestorPartida(Socket socket1, BufferedReader in1, PrintWriter out1, String nick1,
                          Socket socket2, BufferedReader in2, PrintWriter out2, String nick2, 
                          Jogo jogoPartida) {
@@ -42,122 +45,91 @@ public class GestorPartida implements Runnable {
         this.out2 = out2;
         this.nick2 = nick2;
         this.jogoPartida = jogoPartida;
+        this.tempoInicio = System.currentTimeMillis();
+        
+        this.idPartida = UUID.randomUUID().toString();
+        
+        jogosAtivos.add(this);
     }
 
     @Override
     public void run() {
-        long tempoInicio = System.currentTimeMillis();
-        try {
-            System.out.println("Partida iniciada no Gestor entre " + nick1 + " e " + nick2);
+    	try {
+			System.out.println("Sessão iniciada entre " + nick1 + " e " + nick2 + " [ID: " + idPartida + "]");
+			
+			while (!jogoPartida.verificarFim()) {
+				// Verifica se há dados do Jogador 1 para o Jogador 2
+				if (in1.ready()) {
+					String msg1 = in1.readLine();
+					if (msg1 != null) {
+						processarJogadaNoServidor(msg1, '1');
+						out2.println(msg1);
+					}
+				}
+				if (in2.ready()) {
+					String msg2 = in2.readLine();
+					if (msg2 != null) {
+						processarJogadaNoServidor(msg2, '2');
+						out1.println(msg2);
+					}
+				}
+				
+				Thread.sleep(100);
+			}
 
-            // 1. Enviar mensagem protocolar de início de jogo para ambos os clientes
-            out1.println("<mensagem><inicioJogo><simboloAtribuido>1</simboloAtribuido><tamanhoTabuleiro>5</tamanhoTabuleiro></inicioJogo></mensagem>");
-            out2.println("<mensagem><inicioJogo><simboloAtribuido>2</simboloAtribuido><tamanhoTabuleiro>5</tamanhoTabuleiro></inicioJogo></mensagem>");
+			System.out.println("\nPartida " + idPartida + " terminada. A calcular estatísticas...");
+			long tempoTotalSegundos = (System.currentTimeMillis() - tempoInicio) / 1000;
+			
+			String xmlFim = "<mensagem><fimJogo><vencedor>Jogo Concluído</vencedor></fimJogo></mensagem>";
+			out1.println(xmlFim);
+			out2.println(xmlFim);
 
-            // 2. Ciclo principal de turnos gerido pelo Servidor
-            while (!jogoPartida.verificarFim()) {
-                char vez = jogoPartida.getVezAtual();
-                String msgRecebida = "";
+			try {
+				String xmlPath = "src/main/webapp/WEB-INF/jogadores.xml"; 
+				Document docCentral = XMLReader.loadXML(xmlPath);
+				
+				Element elementJ1 = XMLReader.getJogador(docCentral, nick1);
+				Element elementJ2 = XMLReader.getJogador(docCentral, nick2);
+				
+				if (elementJ1 != null && elementJ2 != null) {
+					
+					int pts1 = jogoPartida.getPontos1(); 
+			        int pts2 = jogoPartida.getPontos2();
+			        
+			        if (pts1 > pts2) {
+			            XMLReader.atualizarStats(elementJ1, true); 
+			            XMLReader.atualizarStats(elementJ2, false); 
+			            
+			            XMLReader.atualizarStats(elementJ1, false); 
+			            XMLReader.atualizarStats(elementJ2, true); 
+			        } else {
+			            XMLReader.atualizarStats(elementJ1, true);
+			            XMLReader.atualizarStats(elementJ2, true);
+			        }
+					
+					XMLReader.addTempo(elementJ1, (int) tempoTotalSegundos);
+					XMLReader.addTempo(elementJ2, (int) tempoTotalSegundos);
+					
+					XMLReader.saveXML(docCentral, xmlPath);
+					System.out.println("Estatísticas e tempos de jogo dos nicks sincronizados no ficheiro central.");
+				}
+			} catch (Exception ex) {
+				System.out.println("Aviso ao persistir dados da partida no XML central: " + ex.getMessage());
+			}
 
-                if (vez == '1') {
-                    // Vez do Jogador 1: Servidor lê a jogada do J1
-                    msgRecebida = in1.readLine();
-                    if (msgRecebida == null) {
-                        System.out.println("Jogador 1 (" + nick1 + ") desconectou-se.");
-                        break;
-                    }
-                    
-                    // Processa e sincroniza a jogada no motor do servidor antes de retransmitir
-                    processarJogadaNoServidor(msgRecebida, '1');
-                    
-                    // Envia a jogada para o Jogador 2
-                    out2.println(msgRecebida);
-                } else {
-                    // Vez do Jogador 2: Servidor lê a jogada do J2
-                    msgRecebida = in2.readLine();
-                    if (msgRecebida == null) {
-                        System.out.println("Jogador 2 (" + nick2 + ") desconectou-se.");
-                        break;
-                    }
-                    
-                    // Processa e sincroniza a jogada no motor do servidor antes de retransmitir
-                    processarJogadaNoServidor(msgRecebida, '2');
-                    
-                    // Envia a jogada para o Jogador 1
-                    out1.println(msgRecebida);
-                }
-            }
+		} catch (Exception e) {
+			System.out.println("Exceção na execução da partida: " + e.getMessage());
+		} finally {
+			jogosAtivos.remove(this);
+			try {
+				if (socket1 != null && !socket1.isClosed()) socket1.close();
+				if (socket2 != null && !socket2.isClosed()) socket2.close();
+				System.out.println("Sockets da sessão " + idPartida + " libertados com sucesso.");
+			} catch (Exception ex) {
+			}
+		}
+	}
 
-            // 3. O jogo terminou! Processamento de Fim de Jogo e Atualização de Estatísticas
-            System.out.println("Partida terminada entre " + nick1 + " e " + nick2 + ". A processar resultados...");
-            long tempoGasto = (System.currentTimeMillis() - tempoInicio) / 1000; // tempo em segundos
-
-            // Determinar o vencedor de acordo com o motor de jogo central
-            String nickVencedor = "Empate";
-            boolean j1Venceu = jogoPartida.euGanhei('1');
-            boolean j2Venceu = jogoPartida.euGanhei('2');
-
-            if (j1Venceu && !j2Venceu) {
-                nickVencedor = nick1;
-            } else if (j2Venceu && !j1Venceu) {
-                nickVencedor = nick2;
-            }
-
-            // Criar mensagem XML protocolar de fim de jogo
-            String xmlFim = "<mensagem><fimJogo><vencedor>" + nickVencedor + "</vencedor></fimJogo></mensagem>";
-            
-            // Notificar ambos os clientes que o jogo acabou e quem ganhou
-            out1.println(xmlFim);
-            out2.println(xmlFim);
-
-            // 4. Atualizar a base de dados centralizada no servidor (jogadores.xml) de forma segura
-            synchronized (XMLReader.class) {
-                Document docFinal = XMLReader.loadXML("src/main/webapp/WEB-INF/jogadores.xml");
-                
-                Element j1Node = XMLReader.getJogador(docFinal, nick1);
-                Element j2Node = XMLReader.getJogador(docFinal, nick2);
-
-                if (j1Node != null && j2Node != null) {
-                    if (nickVencedor.equals(nick1)) {
-                        XMLReader.atualizarStats(j1Node, true);  // J1 ganhou
-                        XMLReader.atualizarStats(j2Node, false); // J2 perdeu
-                    } else if (nickVencedor.equals(nick2)) {
-                        XMLReader.atualizarStats(j1Node, false); // J1 perdeu
-                        XMLReader.atualizarStats(j2Node, true);  // J2 ganhou
-                    } else {
-                        XMLReader.atualizarStats(j1Node, false);
-                        XMLReader.atualizarStats(j2Node, false);
-                    }
-
-                    // Adiciona o tempo de jogo a ambos os perfis
-                    XMLReader.addTempo(j1Node, tempoGasto);
-                    XMLReader.addTempo(j2Node, tempoGasto);
-
-                    // Salva fisicamente as alterações no XML central do servidor
-                    XMLReader.saveXML(docFinal, "src/main/webapp/WEB-INF/jogadores.xml");
-                    System.out.println("Estatísticas da partida gravadas com sucesso no jogadores.xml!");
-                }
-            }
-
-        } catch (Exception e) {
-            System.out.println("Exceção na execução da partida: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            // Garantir que os sockets são fechados no final
-            try {
-                if (socket1 != null && !socket1.isClosed()) socket1.close();
-                if (socket2 != null && !socket2.isClosed()) socket2.close();
-                System.out.println("Sockets da sessão encerrados.");
-            } catch (Exception ex) {
-                // Ignora erro ao fechar
-            }
-        }
-    }
-
-    /**
-     * Método auxiliar para efetuar o parsing do XML recebido do cliente e aplicar
-     * a jogada na instância do jogo que corre dentro do Servidor.
-     */
     private void processarJogadaNoServidor(String xmlString, char simboloJogador) {
         try {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -170,12 +142,33 @@ public class GestorPartida implements Runnable {
                 int linha = Integer.parseInt(jogadaNode.getElementsByTagName("linha").item(0).getTextContent());
                 int coluna = Integer.parseInt(jogadaNode.getElementsByTagName("coluna").item(0).getTextContent());
 
-                // Executa a jogada na instância do servidor.
-                // Isto vai atualizar os pontos e alternar a vezAtual de forma idêntica à do cliente!
                 jogoPartida.joga(linha, coluna, simboloJogador);
             }
         } catch (Exception e) {
             System.out.println("Erro ao processar/sincronizar XML da jogada no Servidor: " + e.getMessage());
         }
     }
+
+    public static List<GestorPartida> getJogosAtivos() {
+        synchronized (jogosAtivos) {
+            return new ArrayList<>(jogosAtivos);
+        }
+    }
+
+    public static GestorPartida encontrarPartidaPorId(String id) {
+        synchronized (jogosAtivos) {
+            for (GestorPartida gp : jogosAtivos) {
+                if (gp.getIdPartida().equals(id)) {
+                    return gp;
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public String getIdPartida() { return idPartida; }
+    public String getNick1() { return nick1; }
+    public String getNick2() { return nick2; }
+    public Jogo getJogo() { return jogoPartida; }
 }

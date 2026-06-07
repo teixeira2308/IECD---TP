@@ -1,9 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -24,72 +22,87 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
-
-/**
- * Classe Server implementa um servidor TCP que copia 
- * bytes de um socket de entrada para outro de saída e vice-versa.
- */
-
 public class Server {
 		
-	//Configurar o port
 	public final static int DEFAULT_PORT = 5025;
 	private static Schema protocoloSchema;
 	
-	//Método principal do servidor. Throws IOException 
-	//para conseguir implementar os sockets
+	private static ServerSocket serverSocket;
+	private static volatile boolean running = false;
 	
-	public static void main(String[] args) throws IOException {
-		
-		//Cria um, socket de servidor na porta previamente definida
+	public static void iniciarServidor(String xmlPath, String xsdProtocoloPath) {
 		try {
-			SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			protocoloSchema = factory.newSchema(new File("src/main/webapp/WEB-INF/protocolo.xsd"));
-		} catch (Exception e) {
-			System.err.println("Erro critico: Não foi possível carregar o protocolo.xsd");
-			e.printStackTrace();
-			return;
-		}
-		
-		ServerSocket serversocket = new ServerSocket(DEFAULT_PORT);
-		System.out.println("Servidor TCP iniciado no porto " + DEFAULT_PORT);
-		
-		//Loop inifnito para esperar por conexão de clientes
-		while(true) {
-			try {
-				System.out.println("A aguardar Jogador 1...");
-				Socket socket1 = serversocket.accept();
-				PrintWriter out1 = new PrintWriter(socket1.getOutputStream(), true);
-				BufferedReader in1 = new BufferedReader(new InputStreamReader(socket1.getInputStream()));
-				String nick1 = autenticarCliente(in1, out1);
-				System.out.println("Jogador 1 autenticado: " + nick1);
-				
-				System.out.println("A aguardar Jogador 2...");
-				Socket socket2 = serversocket.accept();
-				PrintWriter out2 = new PrintWriter(socket2.getOutputStream(), true);
-				BufferedReader in2 = new BufferedReader(new InputStreamReader(socket2.getInputStream()));
-				String nick2 = autenticarCliente(in2, out2);
-				System.out.println("Jogador2 autenticado: " + nick2);
-				
-				// Cria uma única partida centralizada com tamanho 5
-				Jogo jogoPartida = new Jogo(5);
-				
-				System.out.println("Iniciando partida entre " + nick1 + " e " + nick2);
-				
-				// Inicia a Thread que vai gerir a sessão deste par de jogadores
-				new Thread(new GestorPartida(socket1, in1, out1, nick1, socket2, in2, out2, nick2, jogoPartida)).start();
-			} catch (Exception e) {
-				System.out.println("Erro ao estabelecer sessão com clientes: " + e.getMessage());
+			running = true;
+			
+			SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+			File xsdFile = new File(xsdProtocoloPath);
+			if (xsdFile.exists()) {
+				protocoloSchema = sf.newSchema(xsdFile);
+				System.out.println("[SERVER TCP] protocolo.xsd carregado com sucesso via Tomcat.");
+			} else {
+                System.out.println("[SERVER TCP] AVISO: protocolo.xsd não encontrado em: " + xsdProtocoloPath);
+            }
+			
+			serverSocket = new ServerSocket(DEFAULT_PORT);
+			System.out.println("[SERVER TCP] Ativo no porto " + DEFAULT_PORT);
+			
+			while (running && !Thread.currentThread().isInterrupted()) {
+				try {
+					System.out.println("[SERVER TCP] A aguardar Jogador 1...");
+					Socket socket1 = serverSocket.accept();
+					PrintWriter out1 = new PrintWriter(socket1.getOutputStream(), true);
+					BufferedReader in1 = new BufferedReader(new InputStreamReader(socket1.getInputStream()));
+					String nick1 = autenticarClienteTomcat(in1, out1, xmlPath);
+					System.out.println("[SERVER TCP] Jogador 1 autenticado: " + nick1);
+					
+					System.out.println("[SERVER TCP] A aguardar Jogador 2...");
+					Socket socket2 = serverSocket.accept();
+					PrintWriter out2 = new PrintWriter(socket2.getOutputStream(), true);
+					BufferedReader in2 = new BufferedReader(new InputStreamReader(socket2.getInputStream()));
+					String nick2 = autenticarClienteTomcat(in2, out2, xmlPath);
+					System.out.println("[SERVER TCP] Jogador 2 autenticado: " + nick2);
+					
+					Jogo jogoPartida = new Jogo(5);
+					System.out.println("[SERVER TCP] Iniciando partida entre " + nick1 + " e " + nick2);
+					
+					new Thread(new GestorPartida(socket1, in1, out1, nick1, socket2, in2, out2, nick2, jogoPartida)).start();
+					
+				} catch (IOException e) {
+					if (!running) {
+						System.out.println("[SERVER TCP] ServerSocket fechado pelo contexto Web.");
+						break;
+					}
+					System.out.println("[SERVER TCP] Erro ao estabelecer sessão com clientes: " + e.getMessage());
+				} catch (Exception e) {
+					System.out.println("[SERVER TCP] Erro no fluxo de emparelhamento: " + e.getMessage());
+				}
 			}
+		} catch (Exception e) {
+			System.out.println("[SERVER TCP] Erro fatal no servidor TCP: " + e.getMessage());
+		} catch (Throwable t) {
+			System.out.println("[SERVER TCP] Erro inesperado: " + t.getMessage());
+		} finally {
+			pararServidor();
 		}
 	}
 	
-	private static String autenticarCliente(BufferedReader in, PrintWriter out) throws Exception {
+	public static void pararServidor() {
+        running = false;
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+                System.out.println("[SERVER TCP] ServerSocket encerrado com sucesso.");
+            }
+        } catch (IOException e) {
+            System.out.println("[SERVER TCP] Erro ao fechar ServerSocket: " + e.getMessage());
+        }
+    }
+	
+	private static String autenticarClienteTomcat(BufferedReader in, PrintWriter out, String xmlPath) throws Exception {
 		while(true) {
 			String xmlRecebido = in.readLine();
 			if (xmlRecebido == null) throw new IOException("Cliente desconectou-se durante a autenticação.");
 			
-			// 1. Validar obrigatoriamente contra o XSD do protocolo
 			Document docMsg = validarEParsarXML(xmlRecebido);
 			if (docMsg == null) {
 				out.println(criarXmlRespostaAutenticacao("erro", "XML inválido face ao protocolo.xsd"));
@@ -98,14 +111,12 @@ public class Server {
 			
 			Element raiz = docMsg.getDocumentElement();
 			
-			// Caso 1: Pedido de Login:
 			if (raiz.getElementsByTagName("pedidoLogin").getLength() > 0) {
 				Element loginNode = (Element) raiz.getElementsByTagName("pedidoLogin").item(0);
 				String nick = loginNode.getElementsByTagName("nickname").item(0).getTextContent();
 				String pass = loginNode.getElementsByTagName("password").item(0).getTextContent();
 				
-				// Base de dados centralizada no Servidor
-				Document docJogadores = XMLReader.loadXML("src/main/webapp/WEB-INF/jogadores.xml");
+				Document docJogadores = XMLReader.loadXML(xmlPath);
 				if (XMLReader.validarLogin(docJogadores, nick, pass)) {
 					out.println(criarXmlRespostaAutenticacao("sucesso", "Login efetuado com sucesso."));
 					return nick;
@@ -114,7 +125,6 @@ public class Server {
 				}
 			}
 			
-			// Caso 2: Pedido de Registo
 			else if (raiz.getElementsByTagName("pedidoRegisto").getLength() > 0) {
 				Element registoNode = (Element) raiz.getElementsByTagName("pedidoRegisto").item(0);
 				String nick = registoNode.getElementsByTagName("nickname").item(0).getTextContent();
@@ -122,12 +132,12 @@ public class Server {
 				String nac = registoNode.getElementsByTagName("nacionalidade").item(0).getTextContent();
 				int idade = Integer.parseInt(registoNode.getElementsByTagName("idade").item(0).getTextContent());
 				
-				Document docJogadores = XMLReader.loadXML("src/main/webapp/WEB-INF/jogadores.xml");
+				Document docJogadores = XMLReader.loadXML(xmlPath);
 				if (XMLReader.getJogador(docJogadores, nick) != null) {
 					out.println(criarXmlRespostaAutenticacao("erro", "O nickname já existe."));
 				} else {
 					XMLReader.addJogador(docJogadores, nick, pass, nac, idade);
-					XMLReader.saveXML(docJogadores, "src/main/webapp/WEB-INF/jogadores.xml");
+					XMLReader.saveXML(docJogadores, xmlPath);
 					out.println(criarXmlRespostaAutenticacao("sucesso", "Registo efetuado com sucesso."));
 					return nick;
 				}
@@ -142,9 +152,10 @@ public class Server {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document doc = db.parse(new InputSource(new StringReader(xmlString)));
 			
-			// Executa a validação estrita baseada no esquema
-			Validator validator = protocoloSchema.newValidator();
-			validator.validate(new DOMSource(doc));
+			if (protocoloSchema != null) {
+				Validator validator = protocoloSchema.newValidator();
+				validator.validate(new DOMSource(doc));
+			}
 			return doc;
 		} catch(Exception e) {
 			System.out.println("Falha na validação XML contra o protocolo.xsd: " + e.getMessage());
