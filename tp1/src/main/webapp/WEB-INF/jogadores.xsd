@@ -14,6 +14,7 @@
 							<xs:element name="vitorias" type="xs:int" default="0"/>
 							<xs:element name="derrotas" type="xs:int" default="0"/>
 							<xs:element name="tempoTotal" type="xs:long" default="0"/>	
+							<xs:element name="corFundo" type="xs:string" default="#ffffff"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>

@@ -3,14 +3,14 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.validation.SchemaFactory;
 
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -24,8 +24,12 @@ public class XMLReader {
 		factory.setValidating(false);
 		factory.setNamespaceAware(true);
 		
+		File xmlFile = new File(path);
+		File pastaWebInf = xmlFile.getParentFile();
+		File xsdFile = new File(pastaWebInf, "jogadores.xsd");
+		
 		SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-		factory.setSchema(schemaFactory.newSchema(new File("src/main/webapp/WEB-INF/jogadores.xsd")));
+		factory.setSchema(schemaFactory.newSchema(xsdFile));
 		
 		DocumentBuilder builder = factory.newDocumentBuilder();
 		Document doc = builder.parse(new File(path));
@@ -87,6 +91,9 @@ public class XMLReader {
 		Element tempoTotal= doc.createElement("tempoTotal");
 		tempoTotal.setTextContent("0");
 		
+		Element corFundo = doc.createElement("corFundo");
+		corFundo.setTextContent("#ffffff");
+		
 		jogador.appendChild(nick);
 		jogador.appendChild(pass);
 		jogador.appendChild(nac);
@@ -95,9 +102,37 @@ public class XMLReader {
 		jogador.appendChild(vitorias);
 		jogador.appendChild(derrotas);
 		jogador.appendChild(tempoTotal);
+		jogador.appendChild(corFundo);
 		
 		
 		root.appendChild(jogador);
+	}
+	
+	public static void atualizarPerfil(Element jogador, String novaFoto, String novaCor) {
+		if (novaFoto != null && !novaFoto.trim().isEmpty()) {
+			jogador.getElementsByTagName("foto").item(0).setTextContent(novaCor);
+		}
+		if (novaCor != null && !novaCor.trim().isEmpty()) {
+			jogador.getElementsByTagName("corFundo").item(0).setTextContent(novaCor);
+		}
+	}
+	
+	public static List<String> procurarPorNome(Document doc, String termo){
+		List<String> resultados = new ArrayList<>();
+		if (termo == null || termo.trim().isEmpty()) return resultados;
+		
+		NodeList jogadores = doc.getElementsByTagName("jogador");
+		String termoMinusculo = termo.toLowerCase();
+		
+		for (int i = 0; i < jogadores.getLength(); i++) {
+			Element j = (Element) jogadores.item(i);
+			String nick = j.getElementsByTagName("nickname").item(0).getTextContent();
+			
+			if (nick.toLowerCase().contains(termoMinusculo)) {
+				resultados.add(nick);
+			}
+		}
+		return resultados;
 	}
 	
 	public synchronized static void saveXML(Document doc, String path) throws Exception {
