@@ -1,3 +1,4 @@
+package tp2;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,39 +26,27 @@ public class XMLReader {
 	        factory.setAttribute("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 	        factory.setAttribute("http://xml.org/sax/features/validation", false);
 	        
-	        File xsdFile = new File("src/main/webapp/WEB-INF/jogadores.xsd");
-	        if (!xsdFile.exists()) {
-	            xsdFile = new File("main/webapp/WEB-INF/jogadores.xsd");
-	        }
-	        if (!xsdFile.exists()) {
-	            xsdFile = new File("WEB-INF/jogadores.xsd");
-	        }
-	        if (!xsdFile.exists()) {
+	        
+	        File xmlFile = new File(path);
+	        File xsdFile = null;
+	        if (xmlFile.getParentFile() != null) {
+	            xsdFile = new File(xmlFile.getParentFile(), "jogadores.xsd");
+	        } else {
 	            xsdFile = new File("jogadores.xsd");
 	        }
-	
-	        if (xsdFile.exists() && xsdFile.length() > 0) {
+
+	        if (xsdFile != null && xsdFile.exists() && xsdFile.length() > 0) {
 	            try {
 	                SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 	                factory.setSchema(schemaFactory.newSchema(xsdFile));
 	            } catch (Exception e) {
-	                System.out.println("Aviso: Falha técnica ao processar a estrutura do jogadores.xsd. O XML será lido em modo de contingência.");
+	                System.out.println("Aviso: Falha técnica ao processar a estrutura do jogadores.xsd.");
 	            }
 	        } else {
-	            System.out.println("Aviso: jogadores.xsd não encontrado no caminho local. Carregando em modo de compatibilidade.");
+	            System.out.println("Aviso: jogadores.xsd não encontrado em " + (xsdFile != null ? xsdFile.getAbsolutePath() : "caminho local") + ". Carregando em modo de compatibilidade.");
 	        }
 	        
-	        // Resolução dinâmica do ficheiro jogadores.xml
-	        File xmlFile = new File(path);
-	        if (!xmlFile.exists()) {
-	            xmlFile = new File("src/main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
-	        }
-	        if (!xmlFile.exists()) {
-	            xmlFile = new File("main/webapp/WEB-INF/" + (path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path));
-	        }
-	        if (!xmlFile.exists()) {
-	            xmlFile = new File(path);
-	        }
+	  
 	
 	        DocumentBuilder builder = factory.newDocumentBuilder();
 	        Document doc = builder.parse(xmlFile);

@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="org.w3c.dom.*" %>
+<%@ page import="org.w3c.dom.*, tp2.XMLReader" %>
+
 <%
 	String utilizador = (String) session.getAttribute("user");
 	if (utilizador == null) {
