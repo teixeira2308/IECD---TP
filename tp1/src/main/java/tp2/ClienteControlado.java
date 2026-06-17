@@ -1,100 +1,62 @@
 package tp2;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.util.Scanner;
 
 public class ClienteControlado {
 
     public static void main(String[] args) {
-        System.out.println("=== CLIENTE INTERATIVO TCP JOGADOR 2 ===");
+        System.out.println("=== CLIENTE INTERATIVO TCP ===");
         
-        // AJUSTA AQUI: Credenciais de um jogador registado no teu jogadores.xml
-        // (Diferente daquele que vais usar para logar no Browser!)
-        String nicknameOp = "aaa";
-        String passwordOp = "111";
-        
-        String xmlLogin = "<mensagem><pedidoLogin><nickname>" + nicknameOp + "</nickname><password>111</password></pedidoLogin></mensagem>";
+        try (Socket socket = new Socket("localhost", 5025);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+             Scanner teclado = new Scanner(System.in)) {
 
-        try {
-            System.out.println("A ligar ao Servidor TCP (porto 5025)...");
-            Socket socket = new Socket("localhost", 5025);
-            System.out.println("Ligação estabelecida!");
+            // 1. Menu de Login Manual
+            System.out.print("Nickname: ");
+            String nick = teclado.nextLine();
+            System.out.print("Password: ");
+            String pass = teclado.nextLine();
 
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-            Scanner teclado = new Scanner(System.in);
-
-            // 1. Enviar Login
-            System.out.println("A enviar credenciais de '" + nicknameOp + "'...");
+            String xmlLogin = "<mensagem><pedidoLogin><nickname>" + nick + "</nickname><password>" + pass + "</password></pedidoLogin></mensagem>";
             out.println(xmlLogin);
-            out.flush();
 
-            // 2. Thread para ficar sempre a ouvir o Servidor (mensagens de jogo)
-            Thread escutaServidor = new Thread(() -> {
+            // 2. Thread para ouvir respostas do servidor
+            Thread escuta = new Thread(() -> {
                 try {
-                    String linhaDoServidor;
-                    while ((linhaDoServidor = in.readLine()) != null) {
-                        System.out.println("\n[SERVIDOR DIZ]: " + linhaDoServidor);
-                        System.out.print("Tua jogada (linha,coluna) ou XML livre: ");
+                    String linha;
+                    while ((linha = in.readLine()) != null) {
+                        System.out.println("\n[SERVER]: " + linha);
+                        if (linha.contains("<status>")) {
+                        	System.out.print("Jogada (l,c): ");
+                        }
                     }
-                } catch (Exception e) {
-                    System.out.println("\nConexão com o servidor encerrada.");
+                } catch (IOException e) {
+                    System.out.println("\nConexão perdida.");
                 }
             });
-            escutaServidor.start();
+            escuta.setDaemon(true);
+            escuta.start();
 
-            // 3. Loop Principal na consola para TU mandares ordens
-            System.out.println("\n--- Modo de Comando Ativo ---");
-            System.out.println("Podes digitar o XML completo ou usar o atalho rápido: linha,coluna (Ex: 1,2)");
-            System.out.println("Digita 'sair' para fechar.");
-            
-            while (escutaServidor.isAlive()) {
-                System.out.print("Tua jogada: ");
-                String comando = teclado.nextLine().trim();
+            // 3. Loop de comandos
+            while (true) {
+                String comando = teclado.nextLine();
+                if (comando.equalsIgnoreCase("sair")) break;
 
-                if (comando.equalsIgnoreCase("sair")) {
-                    break;
-                }
-
-                if (comando.isEmpty()) continue;
-
-                String xmlAEnviar = "";
-
-                // Atalho prático: se digitares "1,2", o programa monta o XML da jogada automaticamente
                 if (comando.contains(",")) {
-                    try {
-                        String[] partes = comando.split(",");
-                        int linha = Integer.parseInt(partes[0].trim());
-                        int coluna = Integer.parseInt(partes[1].trim());
-                        
-                        // Monta o XML da jogada de acordo com o teu protocolo.xsd
-                        xmlAEnviar = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><mensagem><jogada><linha>" 
-                                     + linha + "</linha><coluna>" + coluna + "</coluna><jogador>" 
-                                     + nicknameOp + "</jogador></jogada></mensagem>";
-                    } catch (Exception e) {
-                        System.out.println("Erro no formato. Usa: linha,coluna (ex: 0,1)");
-                        continue;
-                    }
+                    String[] p = comando.split(",");
+                    String xml = "<mensagem><jogada><linha>" + p[0].trim() + 
+                                 "</linha><coluna>" + p[1].trim() + 
+                                 "</coluna><jogador>" + nick + "</jogador></jogada></mensagem>";
+                    out.println(xml);
                 } else {
-                    // Se digitares o XML completo à mão, ele envia direto
-                    xmlAEnviar = comando;
+                    out.println(comando); // Enviar XML bruto se necessário
                 }
-
-                // Envia o comando para o Servidor
-                System.out.println("[ENVIANDO]: " + xmlAEnviar);
-                out.println(xmlAEnviar);
-                out.flush();
             }
 
-            socket.close();
-            teclado.close();
-            System.out.println("Cliente encerrado.");
-
         } catch (Exception e) {
-            System.err.println("Erro no Cliente: " + e.getMessage());
+            System.err.println("Erro: " + e.getMessage());
         }
     }
 }

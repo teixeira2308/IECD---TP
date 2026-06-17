@@ -63,14 +63,14 @@ public class GestorPartida implements Runnable {
 				if (in1.ready()) {
 					String msg1 = in1.readLine();
 					if (msg1 != null) {
-						processarJogadaNoServidor(msg1, '1');
+						processarJogadaNoServidor(msg1, '1', out1);
 						out2.println(msg1);
 					}
 				}
 				if (in2.ready()) {
 					String msg2 = in2.readLine();
 					if (msg2 != null) {
-						processarJogadaNoServidor(msg2, '2');
+						processarJogadaNoServidor(msg2, '2', out2);
 						out1.println(msg2);
 					}
 				}
@@ -131,7 +131,7 @@ public class GestorPartida implements Runnable {
 		}
 	}
 
-    private void processarJogadaNoServidor(String xmlString, char simboloJogador) {
+    private void processarJogadaNoServidor(String xmlString, char simboloJogador, PrintWriter outCliente) {
         try {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
@@ -143,10 +143,15 @@ public class GestorPartida implements Runnable {
                 int linha = Integer.parseInt(jogadaNode.getElementsByTagName("linha").item(0).getTextContent());
                 int coluna = Integer.parseInt(jogadaNode.getElementsByTagName("coluna").item(0).getTextContent());
 
-                jogoPartida.joga(linha, coluna, simboloJogador);
+                boolean sucesso = jogoPartida.joga(linha, coluna, simboloJogador);
+                
+                if (sucesso) {
+                	outCliente.println("<mensagem><resposta><status>sucesso</status></resposta></mensagem>");
+                } else {
+                	outCliente.println("<mensagem><resposta><status>erro</status><detalhe>Jogada inválida ou fora de vez</detalhe></resposta></mensagem>");                }
             }
         } catch (Exception e) {
-            System.out.println("Erro ao processar/sincronizar XML da jogada no Servidor: " + e.getMessage());
+        	outCliente.println("<mensagem><resposta><status>erro</status></resposta></mensagem>");
         }
     }
 
