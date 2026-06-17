@@ -24,6 +24,11 @@
     <h1>Partidas Ativas (Consola TCP)</h1>
     <p>Esta página atualiza-se automaticamente a cada 10 segundos.</p>
 
+<div style="margin-bottom: 20px;">
+        <a href="criarPartida" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+            + Criar Nova Partida pelo Browser
+        </a>
+    </div>
     <table>
         <thead>
             <tr>

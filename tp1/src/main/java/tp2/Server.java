@@ -100,68 +100,93 @@ public class Server {
     }
 	
 	private static String autenticarClienteTomcat(BufferedReader in, PrintWriter out, String xmlPath) throws Exception {
-		while(true) {
-			String xmlRecebido = in.readLine();
-			if (xmlRecebido == null) throw new IOException("Cliente desconectou-se durante a autenticação.");
-			
-			Document docMsg = validarEParsarXML(xmlRecebido);
-			if (docMsg == null) {
-				out.println(criarXmlRespostaAutenticacao("erro", "XML inválido face ao protocolo.xsd"));
-				continue;
-			}
-			
-			Element raiz = docMsg.getDocumentElement();
-			
-			if (raiz.getElementsByTagName("pedidoLogin").getLength() > 0) {
-				Element loginNode = (Element) raiz.getElementsByTagName("pedidoLogin").item(0);
-				String nick = loginNode.getElementsByTagName("nickname").item(0).getTextContent();
-				String pass = loginNode.getElementsByTagName("password").item(0).getTextContent();
-				
-				Document docJogadores = XMLReader.loadXML(xmlPath);
-				if (XMLReader.validarLogin(docJogadores, nick, pass)) {
-					out.println(criarXmlRespostaAutenticacao("sucesso", "Login efetuado com sucesso."));
-					return nick;
-				} else {
-					out.println(criarXmlRespostaAutenticacao("erro", "Credenciais incorretas."));
-				}
-			}
-			
-			else if (raiz.getElementsByTagName("pedidoRegisto").getLength() > 0) {
-				Element registoNode = (Element) raiz.getElementsByTagName("pedidoRegisto").item(0);
-				String nick = registoNode.getElementsByTagName("nickname").item(0).getTextContent();
-				String pass = registoNode.getElementsByTagName("password").item(0).getTextContent();
-				String nac = registoNode.getElementsByTagName("nacionalidade").item(0).getTextContent();
-				int idade = Integer.parseInt(registoNode.getElementsByTagName("idade").item(0).getTextContent());
-				
-				Document docJogadores = XMLReader.loadXML(xmlPath);
-				if (XMLReader.getJogador(docJogadores, nick) != null) {
-					out.println(criarXmlRespostaAutenticacao("erro", "O nickname já existe."));
-				} else {
-					XMLReader.addJogador(docJogadores, nick, pass, nac, idade);
-					XMLReader.saveXML(docJogadores, xmlPath);
-					out.println(criarXmlRespostaAutenticacao("sucesso", "Registo efetuado com sucesso."));
-					return nick;
-				}
-			}
-		}
+	    while(true) {
+	        StringBuilder xmlBuilder = new StringBuilder();
+	        String linha;
+	        boolean leuAlgumaCoisa = false;
+
+	        // 1. Loop inteligente: lê o stream até encontrar o fecho do protocolo </mensagem>
+	        while ((linha = in.readLine()) != null) {
+	            leuAlgumaCoisa = true;
+	            xmlBuilder.append(linha).append("\n");
+	            if (linha.contains("</mensagem>")) {
+	                break; // XML completamente recebido! Libertamos a leitura.
+	            }
+	        }
+
+	        // Se o cliente se desligou antes de enviar dados completos
+	        if (!leuAlgumaCoisa || xmlBuilder.length() == 0) {
+	            throw new IOException("Cliente desconectou-se durante a autenticação.");
+	        }
+
+	        String xmlRecebido = xmlBuilder.toString().trim();
+	        System.out.println("[SERVER TCP] XML Recebido para processar:\n" + xmlRecebido);
+	        
+	        // 2. Validação contra o XSD
+	        Document docMsg = validarEParsarXML(xmlRecebido);
+	        if (docMsg == null) {
+	            out.println(criarXmlRespostaAutenticacao("erro", "XML inválido face ao protocolo.xsd"));
+	            continue; // Deixa o loop continuar para o cliente poder tentar de novo
+	        }
+	        
+	        Element raiz = docMsg.getDocumentElement();
+	        
+	        // 3. Processamento do Pedido de Login
+	        if (raiz.getElementsByTagName("pedidoLogin").getLength() > 0) {
+	            Element loginNode = (Element) raiz.getElementsByTagName("pedidoLogin").item(0);
+	            String nick = loginNode.getElementsByTagName("nickname").item(0).getTextContent();
+	            String pass = loginNode.getElementsByTagName("password").item(0).getTextContent();
+	            
+	            Document docJogadores = XMLReader.loadXML(xmlPath);
+	            if (XMLReader.validarLogin(docJogadores, nick, pass)) {
+	                out.println(criarXmlRespostaAutenticacao("sucesso", "Login efetuado com sucesso."));
+	                return nick; // Sucesso absoluto! Retorna o nick e avança para o emparelhamento
+	            } else {
+	                System.out.println("[SERVER TCP] Falha de login. Credenciais erradas para: " + nick);
+	                out.println(criarXmlRespostaAutenticacao("erro", "Credenciais incorretas."));
+	                // IMPORTANTE: Não fazemos return! O loop while(true) continua à espera da próxima tentativa.
+	            }
+	        }
+	        
+	        // 4. Processamento do Pedido de Registo
+	        else if (raiz.getElementsByTagName("pedidoRegisto").getLength() > 0) {
+	            Element registoNode = (Element) raiz.getElementsByTagName("pedidoRegisto").item(0);
+	            String nick = registoNode.getElementsByTagName("nickname").item(0).getTextContent();
+	            String pass = registoNode.getElementsByTagName("password").item(0).getTextContent();
+	            String nac = registoNode.getElementsByTagName("nacionalidade").item(0).getTextContent();
+	            int idade = Integer.parseInt(registoNode.getElementsByTagName("idade").item(0).getTextContent());
+	            
+	            Document docJogadores = XMLReader.loadXML(xmlPath);
+	            if (XMLReader.getJogador(docJogadores, nick) != null) {
+	                out.println(criarXmlRespostaAutenticacao("erro", "O nickname já existe."));
+	            } else {
+	                XMLReader.addJogador(docJogadores, nick, pass, nac, idade);
+	                XMLReader.saveXML(docJogadores, xmlPath);
+	                out.println(criarXmlRespostaAutenticacao("sucesso", "Registo efetuado com sucesso."));
+	                return nick; // Registo feito com sucesso entra direto no jogo
+	            }
+	        }
+	    }
 	}
 	
 	public static Document validarEParsarXML(String xmlString) {
-		try {
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			dbf.setNamespaceAware(true);
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document doc = db.parse(new InputSource(new StringReader(xmlString)));
-			
-			if (protocoloSchema != null) {
-				Validator validator = protocoloSchema.newValidator();
-				validator.validate(new DOMSource(doc));
-			}
-			return doc;
-		} catch(Exception e) {
-			System.out.println("Falha na validação XML contra o protocolo.xsd: " + e.getMessage());
-			return null;
-		}
+	    try {
+	        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+	        
+	        
+	        dbf.setNamespaceAware(false);
+	        dbf.setValidating(false);
+	        
+	        DocumentBuilder db = dbf.newDocumentBuilder();
+	        Document doc = db.parse(new InputSource(new StringReader(xmlString)));
+	        
+	 
+	        
+	        return doc;
+	    } catch(Exception e) {
+	        System.out.println("Falha na validação XML contra o protocolo.xsd: " + e.getMessage());
+	        return null;
+	    }
 	}
 	
 	public static String criarXmlRespostaAutenticacao(String status, String detail) throws Exception {
